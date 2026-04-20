@@ -47,6 +47,32 @@ export default function WeeklyGrid() {
     setDragState(value);
   }
 
+  // Resize state: tracks the event being resized and the current preview duration.
+  const [resizeState, setResizeState] = useState(null);
+  const resizeRef = useRef(null);
+
+  const isResizing = resizeState !== null;
+
+  function setResizeAndRef(value) {
+    resizeRef.current = value;
+    setResizeState(value);
+  }
+
+  // Compute the snapped duration (in whole hours) from a pointer Y position.
+  // The duration is clamped to [1, END_HOUR - startHour].
+  const getSnappedDuration = useCallback((clientY, startHour) => {
+    const body = bodyRef.current;
+    if (!body) return null;
+    const rect = body.getBoundingClientRect();
+    const y = clientY - rect.top + body.scrollTop;
+
+    const eventTopY = (startHour - START_HOUR) * BASE_SLOT_HEIGHT;
+    const heightPx = y - eventTopY;
+    const rawDuration = Math.round(heightPx / BASE_SLOT_HEIGHT);
+    const maxDuration = END_HOUR - startHour;
+    return Math.max(1, Math.min(maxDuration, rawDuration));
+  }, []);
+
   // Compute the snapped grid position (dayIndex, startHour) from a pointer location.
   const getSnappedPos = useCallback((clientX, clientY, grabOffsetHours) => {
     const body = bodyRef.current;
@@ -105,11 +131,47 @@ export default function WeeklyGrid() {
     };
   }, [isDragging, getSnappedPos]);
 
-  // Set a grabbing cursor on the document body while dragging.
+  // Add window-level pointer listeners while a resize is active.
   useEffect(() => {
-    if (isDragging) {
-      document.body.style.cursor = 'grabbing';
+    if (!isResizing) return;
+
+    function onPointerMove(e) {
+      const rs = resizeRef.current;
+      if (!rs) return;
+      const duration = getSnappedDuration(e.clientY, rs.startHour);
+      if (duration !== null && duration !== rs.previewDuration) {
+        const next = { ...rs, previewDuration: duration };
+        resizeRef.current = next;
+        setResizeState(next);
+      }
+    }
+
+    function onPointerUp(e) {
+      const rs = resizeRef.current;
+      if (rs) {
+        const duration = getSnappedDuration(e.clientY, rs.startHour);
+        if (duration !== null) {
+          updateEvent(rs.eventId, { durationHours: duration });
+          setEvents(getEvents());
+        }
+      }
+      resizeRef.current = null;
+      setResizeState(null);
+    }
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+    };
+  }, [isResizing, getSnappedDuration]);
+
+  // Set a grabbing/resize cursor and disable text selection while interacting.
+  useEffect(() => {
+    if (isDragging || isResizing) {
       document.body.style.userSelect = 'none';
+      document.body.style.cursor = isDragging ? 'grabbing' : 'ns-resize';
     } else {
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
@@ -118,7 +180,7 @@ export default function WeeklyGrid() {
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
     };
-  }, [isDragging]);
+  }, [isDragging, isResizing]);
 
   const gridWidth = TIME_GUTTER_WIDTH + BASE_DAY_WIDTH * DAYS.length;
   const durationOptions = useMemo(() => {
@@ -171,8 +233,8 @@ export default function WeeklyGrid() {
   }
 
   function handleEventPointerDown(e, calendarEvent) {
-    // Ignore if the create-modal is open
-    if (isCreateOpen) return;
+    // Ignore if the create-modal is open or a resize is in progress
+    if (isCreateOpen || isResizing) return;
     e.preventDefault();
     e.stopPropagation();
 
@@ -197,6 +259,21 @@ export default function WeeklyGrid() {
       previewDay: calendarEvent.dayIndex,
       previewHour: calendarEvent.startHour,
       durationHours: calendarEvent.durationHours,
+      color: calendarEvent.color,
+    });
+  }
+
+  function handleResizePointerDown(e, calendarEvent) {
+    // Ignore if the create-modal is open or a drag is in progress
+    if (isCreateOpen || isDragging) return;
+    e.preventDefault();
+    e.stopPropagation(); // prevent the event's pointerdown (drag) from firing
+
+    setResizeAndRef({
+      eventId: calendarEvent.id,
+      startHour: calendarEvent.startHour,
+      dayIndex: calendarEvent.dayIndex,
+      previewDuration: calendarEvent.durationHours,
       color: calendarEvent.color,
     });
   }
@@ -281,12 +358,28 @@ export default function WeeklyGrid() {
               />
             )}
 
+            {/* Resize ghost: shown in the same column at the same startHour with preview duration */}
+            {resizeState && resizeState.dayIndex === dayIndex && (
+              <div
+                className="drag-ghost"
+                style={{
+                  top: (resizeState.startHour - START_HOUR) * BASE_SLOT_HEIGHT,
+                  height: resizeState.previewDuration * BASE_SLOT_HEIGHT,
+                  borderColor: resizeState.color,
+                }}
+              />
+            )}
+
             {events
               .filter((calendarEvent) => calendarEvent.dayIndex === dayIndex)
-              .map((calendarEvent) => (
+              .map((calendarEvent) => {
+                const eventClasses = ['calendar-event'];
+                if (dragState?.eventId === calendarEvent.id) eventClasses.push('calendar-event--dragging');
+                if (resizeState?.eventId === calendarEvent.id) eventClasses.push('calendar-event--resizing');
+                return (
                 <div
                   key={calendarEvent.id}
-                  className={`calendar-event${dragState?.eventId === calendarEvent.id ? ' calendar-event--dragging' : ''}`}
+                  className={eventClasses.join(' ')}
                   style={{
                     // Event layout is derived from model values and snapped to hour-height units.
                     top: (calendarEvent.startHour - START_HOUR) * BASE_SLOT_HEIGHT,
@@ -297,8 +390,13 @@ export default function WeeklyGrid() {
                   onPointerDown={(e) => handleEventPointerDown(e, calendarEvent)}
                 >
                   {calendarEvent.title || 'Untitled event'}
+                  <div
+                    className="resize-handle"
+                    onPointerDown={(e) => handleResizePointerDown(e, calendarEvent)}
+                  />
                 </div>
-              ))}
+                );
+              })}
           </div>
         ))}
       </div>

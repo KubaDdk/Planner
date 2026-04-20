@@ -190,6 +190,32 @@
   cursor: grabbing;
 }
 
+.calendar-event--resizing {
+  opacity: 0.35;
+}
+
+.resize-handle {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 10px;
+  cursor: ns-resize;
+  border-radius: 0 0 var(--border-radius) var(--border-radius);
+}
+
+.resize-handle::after {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
 .drag-ghost {
   position: absolute;
   left: 6px;
