@@ -46,3 +46,22 @@ export function removeEvent(id) {
   events.splice(eventIndex, 1);
   return true;
 }
+
+export function updateEvent(id, changes) {
+  const event = events.find((e) => e.id === id);
+  if (!event) return null;
+
+  const startHour = clamp(
+    Number(changes.startHour ?? event.startHour),
+    START_HOUR,
+    END_HOUR - 1,
+  );
+  const maxDuration = Math.max(1, END_HOUR - startHour);
+  const durationHours = clamp(Number(changes.durationHours ?? event.durationHours), 1, maxDuration);
+
+  event.dayIndex = clamp(Number(changes.dayIndex ?? event.dayIndex), 0, DAYS.length - 1);
+  event.startHour = startHour;
+  event.durationHours = durationHours;
+
+  return { ...event };
+}

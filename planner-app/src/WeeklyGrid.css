@@ -180,6 +180,26 @@
   overflow: hidden;
   z-index: 2;
   box-sizing: border-box;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.calendar-event--dragging {
+  opacity: 0.35;
+  cursor: grabbing;
+}
+
+.drag-ghost {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  border-radius: var(--border-radius);
+  border: 2px dashed;
+  background: rgba(0, 0, 0, 0.06);
+  z-index: 1;
+  box-sizing: border-box;
+  pointer-events: none;
 }
 
 .create-event-modal {
