@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   DAYS,
   START_HOUR,
@@ -8,7 +8,7 @@ import {
   BASE_DAY_WIDTH,
   TIME_GUTTER_WIDTH,
 } from './constants';
-import { addEvent, getEvents } from './eventStore';
+import { addEvent, getEvents, updateEvent } from './eventStore';
 import './WeeklyGrid.css';
 
 const EVENT_COLORS = ['#2563eb', '#9333ea', '#db2777', '#ea580c', '#059669'];
@@ -33,6 +33,92 @@ export default function WeeklyGrid() {
     durationHours: '1',
     color: EVENT_COLORS[0],
   }));
+
+  // Drag state for rendering (ghost + opacity). The ref holds the same value
+  // so window listeners can always access the latest without stale closures.
+  const [dragState, setDragState] = useState(null);
+  const dragRef = useRef(null);
+  const bodyRef = useRef(null);
+
+  const isDragging = dragState !== null;
+
+  function setDragAndRef(value) {
+    dragRef.current = value;
+    setDragState(value);
+  }
+
+  // Compute the snapped grid position (dayIndex, startHour) from a pointer location.
+  const getSnappedPos = useCallback((clientX, clientY, grabOffsetHours) => {
+    const body = bodyRef.current;
+    if (!body) return null;
+    const rect = body.getBoundingClientRect();
+    const x = clientX - rect.left + body.scrollLeft;
+    const y = clientY - rect.top + body.scrollTop;
+
+    // Map x to day column
+    const xInCols = x - TIME_GUTTER_WIDTH;
+    const rawDay = Math.floor(xInCols / BASE_DAY_WIDTH);
+    const dayIndex = Math.max(0, Math.min(DAYS.length - 1, rawDay));
+
+    // Map y (adjusted for grab offset) to snapped hour
+    const eventTopY = y - grabOffsetHours * BASE_SLOT_HEIGHT;
+    const rawHour = Math.round(eventTopY / BASE_SLOT_HEIGHT) + START_HOUR;
+    const startHour = Math.max(START_HOUR, Math.min(END_HOUR - 1, rawHour));
+
+    return { dayIndex, startHour };
+  }, []);
+
+  // Add window-level pointer listeners while a drag is active.
+  useEffect(() => {
+    if (!isDragging) return;
+
+    function onPointerMove(e) {
+      const ds = dragRef.current;
+      if (!ds) return;
+      const pos = getSnappedPos(e.clientX, e.clientY, ds.grabOffsetHours);
+      if (!pos) return;
+      if (pos.dayIndex !== ds.previewDay || pos.startHour !== ds.previewHour) {
+        const next = { ...ds, previewDay: pos.dayIndex, previewHour: pos.startHour };
+        dragRef.current = next;
+        setDragState(next);
+      }
+    }
+
+    function onPointerUp(e) {
+      const ds = dragRef.current;
+      if (ds) {
+        const pos = getSnappedPos(e.clientX, e.clientY, ds.grabOffsetHours);
+        if (pos) {
+          updateEvent(ds.eventId, { dayIndex: pos.dayIndex, startHour: pos.startHour });
+          setEvents(getEvents());
+        }
+      }
+      dragRef.current = null;
+      setDragState(null);
+    }
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+    };
+  }, [isDragging, getSnappedPos]);
+
+  // Set a grabbing cursor on the document body while dragging.
+  useEffect(() => {
+    if (isDragging) {
+      document.body.style.cursor = 'grabbing';
+      document.body.style.userSelect = 'none';
+    } else {
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
+    return () => {
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isDragging]);
 
   const gridWidth = TIME_GUTTER_WIDTH + BASE_DAY_WIDTH * DAYS.length;
   const durationOptions = useMemo(() => {
@@ -84,6 +170,37 @@ export default function WeeklyGrid() {
     }
   }
 
+  function handleEventPointerDown(e, calendarEvent) {
+    // Ignore if the create-modal is open
+    if (isCreateOpen) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const body = bodyRef.current;
+    if (!body) return;
+    const rect = body.getBoundingClientRect();
+
+    // Calculate how far down inside the event the user grabbed (in hours)
+    const y = e.clientY - rect.top + body.scrollTop;
+    const eventTopY = (calendarEvent.startHour - START_HOUR) * BASE_SLOT_HEIGHT;
+    // Clamp grab offset to stay strictly inside the event bounds (subtract 1 px
+    // so the offset never equals the full height, which would place the snap
+    // point one slot below the event's actual end).
+    const grabOffsetPx = Math.max(
+      0,
+      Math.min(y - eventTopY, calendarEvent.durationHours * BASE_SLOT_HEIGHT - 1),
+    );
+
+    setDragAndRef({
+      eventId: calendarEvent.id,
+      grabOffsetHours: grabOffsetPx / BASE_SLOT_HEIGHT,
+      previewDay: calendarEvent.dayIndex,
+      previewHour: calendarEvent.startHour,
+      durationHours: calendarEvent.durationHours,
+      color: calendarEvent.color,
+    });
+  }
+
   return (
     <div className="planner-root">
       <div className="planner-toolbar">
@@ -117,7 +234,7 @@ export default function WeeklyGrid() {
       </div>
 
       {/* Scrollable body */}
-      <div className="planner-body" style={{ width: gridWidth }}>
+      <div ref={bodyRef} className="planner-body" style={{ width: gridWidth }}>
         {/* Time gutter column */}
         <div
           className="time-gutter"
@@ -152,12 +269,24 @@ export default function WeeklyGrid() {
               />
             ))}
 
+            {/* Drag ghost: shown in the target column at the snapped position */}
+            {dragState && dragState.previewDay === dayIndex && (
+              <div
+                className="drag-ghost"
+                style={{
+                  top: (dragState.previewHour - START_HOUR) * BASE_SLOT_HEIGHT,
+                  height: dragState.durationHours * BASE_SLOT_HEIGHT,
+                  borderColor: dragState.color,
+                }}
+              />
+            )}
+
             {events
               .filter((calendarEvent) => calendarEvent.dayIndex === dayIndex)
               .map((calendarEvent) => (
                 <div
                   key={calendarEvent.id}
-                  className="calendar-event"
+                  className={`calendar-event${dragState?.eventId === calendarEvent.id ? ' calendar-event--dragging' : ''}`}
                   style={{
                     // Event layout is derived from model values and snapped to hour-height units.
                     top: (calendarEvent.startHour - START_HOUR) * BASE_SLOT_HEIGHT,
@@ -165,6 +294,7 @@ export default function WeeklyGrid() {
                     backgroundColor: calendarEvent.color,
                   }}
                   title={calendarEvent.title || 'Untitled event'}
+                  onPointerDown={(e) => handleEventPointerDown(e, calendarEvent)}
                 >
                   {calendarEvent.title || 'Untitled event'}
                 </div>
