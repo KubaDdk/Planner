@@ -1,0 +1,146 @@
+/* ===== Planner shell ===== */
+
+:root {
+  --color-bg: #f4f5f7;
+  --color-surface: #ffffff;
+  --color-border: #d1d5db;
+  --color-border-light: #e5e7eb;
+  --color-header-bg: #1e293b;
+  --color-header-text: #f8fafc;
+  --color-gutter-bg: #f8fafc;
+  --color-gutter-text: #64748b;
+  --color-slot-hover: #eff6ff;
+  --color-weekend: #fafafa;
+
+  --font-size-header: 0.9rem;
+  --font-size-label: 0.75rem;
+  --border-radius: 4px;
+}
+
+/* Root container: fills the viewport */
+.planner-root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--color-bg);
+  overflow: hidden;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* ===== Sticky header ===== */
+.planner-header {
+  display: flex;
+  flex-direction: row;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--color-header-bg);
+  border-bottom: 2px solid var(--color-border);
+  /* Allow horizontal scroll to follow body scroll */
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.time-gutter-header {
+  flex-shrink: 0;
+  background: var(--color-header-bg);
+}
+
+.day-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 4px;
+  font-size: var(--font-size-header);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-header-text);
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  user-select: none;
+}
+
+/* ===== Scrollable body ===== */
+.planner-body {
+  display: flex;
+  flex-direction: row;
+  overflow-y: auto;
+  overflow-x: auto;
+  flex: 1;
+  background: var(--color-surface);
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ===== Time gutter ===== */
+.time-gutter {
+  flex-shrink: 0;
+  background: var(--color-gutter-bg);
+  border-right: 1px solid var(--color-border);
+  position: sticky;
+  left: 0;
+  z-index: 5;
+}
+
+.time-label {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 4px 8px 0 0;
+  font-size: var(--font-size-label);
+  color: var(--color-gutter-text);
+  font-variant-numeric: tabular-nums;
+  border-bottom: 1px solid var(--color-border-light);
+  box-sizing: border-box;
+  user-select: none;
+}
+
+.time-label--end {
+  /* The final timestamp label at the bottom (22:00) — no slot height */
+  height: 20px;
+  border-bottom: none;
+}
+
+/* ===== Day columns ===== */
+.day-column {
+  flex-shrink: 0;
+  border-right: 1px solid var(--color-border-light);
+  position: relative;
+  background: var(--color-surface);
+}
+
+.day-column--last {
+  border-right: none;
+}
+
+/* Weekend columns (Sat = index 5, Sun = index 6) — subtle tint */
+.day-column:nth-child(n + 7) {
+  background: var(--color-weekend);
+}
+
+/* ===== Hour slots ===== */
+.hour-slot {
+  border-bottom: 1px solid var(--color-border-light);
+  box-sizing: border-box;
+  width: 100%;
+  cursor: default;
+  position: relative;
+  transition: background 0.1s;
+}
+
+.hour-slot:hover {
+  background: var(--color-slot-hover);
+}
+
+/* Half-hour guide line (decorative) */
+.hour-slot::after {
+  content: '';
+  position: absolute;
+  bottom: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--color-border-light);
+  opacity: 0.6;
+  pointer-events: none;
+}
