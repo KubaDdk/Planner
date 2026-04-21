@@ -152,17 +152,29 @@ export default function WeeklyGrid() {
 
   // Compute the snapped grid position (dayIndex, startHour) from a pointer location.
   // Iterates over each calendar-day card body to find which column the pointer is in.
+  // When multiple columns share the same X range (e.g. Mon and Fri in a 4-column grid),
+  // an exact XY hit takes priority; otherwise the column closest by Y distance is used.
   const getSnappedPos = useCallback((clientX, clientY, grabOffsetHours) => {
     let foundDay = -1;
+    let closestDay = -1;
+    let closestYDist = Infinity;
     for (let i = 0; i < CALENDAR_DAY_COUNT; i++) {
       const cardBody = dayCardBodyRefs.current[i];
       if (!cardBody) continue;
       const rect = cardBody.getBoundingClientRect();
       if (clientX >= rect.left && clientX <= rect.right) {
-        foundDay = i;
-        break;
+        if (clientY >= rect.top && clientY <= rect.bottom) {
+          foundDay = i;
+          break;
+        }
+        const yDist = Math.min(Math.abs(clientY - rect.top), Math.abs(clientY - rect.bottom));
+        if (yDist < closestYDist) {
+          closestYDist = yDist;
+          closestDay = i;
+        }
       }
     }
+    if (foundDay === -1) foundDay = closestDay;
     if (foundDay === -1) return null;
 
     const cardBody = dayCardBodyRefs.current[foundDay];
