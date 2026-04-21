@@ -151,11 +151,19 @@ export default function WeeklyGrid() {
       setDragState(null);
     }
 
+    // Cancel drag without committing if the pointer is stolen (e.g. browser gesture takeover).
+    function onPointerCancel() {
+      dragRef.current = null;
+      setDragState(null);
+    }
+
     window.addEventListener('pointermove', onPointerMove);
     window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerCancel);
     return () => {
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerCancel);
     };
   }, [isDragging, getSnappedPos]);
 
@@ -187,13 +195,53 @@ export default function WeeklyGrid() {
       setResizeState(null);
     }
 
+    // Cancel resize without committing if the pointer is stolen.
+    function onPointerCancel() {
+      resizeRef.current = null;
+      setResizeState(null);
+    }
+
     window.addEventListener('pointermove', onPointerMove);
     window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerCancel);
     return () => {
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerCancel);
     };
   }, [isResizing, getSnappedDuration]);
+
+  // Cancel active drag or resize on Escape without committing the change.
+  useEffect(() => {
+    if (!isDragging && !isResizing) return;
+
+    function onKeyDown(e) {
+      if (e.key !== 'Escape') return;
+      if (isDragging) {
+        dragRef.current = null;
+        setDragState(null);
+      }
+      if (isResizing) {
+        resizeRef.current = null;
+        setResizeState(null);
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isDragging, isResizing]);
+
+  // Close the create-event modal on Escape.
+  useEffect(() => {
+    if (!isCreateOpen) return;
+
+    function onKeyDown(e) {
+      if (e.key === 'Escape') setIsCreateOpen(false);
+    }
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isCreateOpen]);
 
   // Set a grabbing/resize cursor and disable text selection while interacting.
   useEffect(() => {
@@ -454,7 +502,9 @@ export default function WeeklyGrid() {
                   title={calendarEvent.title || 'Untitled event'}
                   onPointerDown={(e) => handleEventPointerDown(e, calendarEvent)}
                 >
-                  {calendarEvent.title || 'Untitled event'}
+                  <span className="calendar-event-title">
+                    {calendarEvent.title || 'Untitled event'}
+                  </span>
                   <div
                     className="resize-handle"
                     onPointerDown={(e) => handleResizePointerDown(e, calendarEvent)}
@@ -467,8 +517,15 @@ export default function WeeklyGrid() {
       </div>
 
       {isCreateOpen && (
-        <div className="create-event-modal" role="dialog" aria-modal="true">
-          <form className="create-event-form" onSubmit={handleCreateEvent}>
+        <div
+          className="create-event-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Create event"
+          onClick={() => setIsCreateOpen(false)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsCreateOpen(false); }}
+        >
+          <form className="create-event-form" onSubmit={handleCreateEvent} onClick={(e) => e.stopPropagation()}>
             <h2>Create event</h2>
 
             <label>
