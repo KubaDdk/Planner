@@ -481,6 +481,7 @@ export default function WeeklyGrid() {
                   <div
                     className="day-card-body"
                     ref={(el) => { dayCardBodyRefs.current[dayIndex] = el; }}
+                    style={{ height: HOUR_COUNT * slotHeight }}
                   >
                     {hours.map((hour) => (
                       <div
@@ -488,7 +489,9 @@ export default function WeeklyGrid() {
                         className="hour-slot"
                         style={{ height: slotHeight }}
                         aria-label={`${day} ${formatHour(hour)}`}
-                      />
+                      >
+                        <span className="hour-slot-label">{formatHour(hour)}</span>
+                      </div>
                     ))}
 
                     {/* Drag ghost */}
