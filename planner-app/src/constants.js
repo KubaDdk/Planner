@@ -1,4 +1,5 @@
-export const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+export const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun', 'To Do'];
+export const CALENDAR_DAY_COUNT = 7; // Mon–Sun only (last entry is To Do)
 
 export const START_HOUR = 6;
 export const END_HOUR = 22;
