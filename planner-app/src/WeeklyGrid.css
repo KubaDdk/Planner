@@ -289,7 +289,6 @@
   font-weight: 500;
   line-height: 1;
   white-space: nowrap;
-  pointer-events: none;
 }
 
 /* ===== Create-event modal ===== */
