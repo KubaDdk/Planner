@@ -71,6 +71,63 @@ export default function WeeklyGrid() {
     setDragState(value);
   }
 
+  // Inline-editing state: tracks which event title is being edited.
+  const [editingEventId, setEditingEventId] = useState(null);
+  const [editingTitle, setEditingTitle] = useState('');
+  const editInputRef = useRef(null);
+  // Tracks the original title so we can revert if the user clears the field or cancels.
+  const editOriginalTitleRef = useRef('');
+  // Flag set during Escape/cancel to suppress the subsequent blur commit.
+  const editCancellingRef = useRef(false);
+
+  // Focus the input whenever editing begins.
+  useEffect(() => {
+    if (editingEventId && editInputRef.current) {
+      editInputRef.current.focus();
+      editInputRef.current.select();
+    }
+  }, [editingEventId]);
+
+  function handleEditStart(e, calendarEvent) {
+    e.stopPropagation();
+    e.preventDefault();
+    editOriginalTitleRef.current = calendarEvent.title;
+    editCancellingRef.current = false;
+    setEditingEventId(calendarEvent.id);
+    setEditingTitle(calendarEvent.title);
+  }
+
+  function handleEditCommit(id, title) {
+    if (editCancellingRef.current) return;
+    if (id) {
+      const trimmed = title.trim();
+      // Revert to original if the user cleared the title; otherwise save.
+      const finalTitle = trimmed || editOriginalTitleRef.current;
+      updateEvent(id, { title: finalTitle });
+      setEvents(getEvents());
+    }
+    setEditingEventId(null);
+    setEditingTitle('');
+  }
+
+  function handleEditBlur() {
+    handleEditCommit(editingEventId, editingTitle);
+  }
+
+  function handleEditKeyDown(e) {
+    if (e.key === 'Enter') {
+      // Blur the input which will trigger handleEditBlur → handleEditCommit.
+      editInputRef.current?.blur();
+    } else if (e.key === 'Escape') {
+      // Set the cancelling flag before blurring so handleEditBlur is a no-op.
+      editCancellingRef.current = true;
+      setEditingEventId(null);
+      setEditingTitle('');
+      // Reset the flag after the blur event fires.
+      requestAnimationFrame(() => { editCancellingRef.current = false; });
+    }
+  }
+
   // Resize state: tracks the event being resized and the current preview duration.
   const [resizeState, setResizeState] = useState(null);
   const resizeRef = useRef(null);
@@ -337,8 +394,8 @@ export default function WeeklyGrid() {
   }
 
   function handleEventPointerDown(e, calendarEvent) {
-    // Ignore if the create-modal is open or a resize is in progress
-    if (isCreateOpen || isResizing) return;
+    // Ignore if the create-modal is open, a resize is in progress, or this event is being edited
+    if (isCreateOpen || isResizing || editingEventId === calendarEvent.id) return;
     e.preventDefault();
     e.stopPropagation();
 
@@ -502,9 +559,30 @@ export default function WeeklyGrid() {
                   title={calendarEvent.title || 'Untitled event'}
                   onPointerDown={(e) => handleEventPointerDown(e, calendarEvent)}
                 >
-                  <span className="calendar-event-title">
-                    {calendarEvent.title || 'Untitled event'}
-                  </span>
+                  {editingEventId === calendarEvent.id ? (
+                    <input
+                      ref={editInputRef}
+                      className="calendar-event-title-input"
+                      value={editingTitle}
+                      onChange={(e) => setEditingTitle(e.target.value)}
+                      onBlur={handleEditBlur}
+                      onKeyDown={handleEditKeyDown}
+                      onPointerDown={(e) => e.stopPropagation()}
+                    />
+                  ) : (
+                    <span className="calendar-event-title">
+                      {calendarEvent.title || 'Untitled event'}
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    className="calendar-event-edit-btn"
+                    aria-label="Edit event title"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => handleEditStart(e, calendarEvent)}
+                  >
+                    ✏
+                  </button>
                   <div
                     className="resize-handle"
                     onPointerDown={(e) => handleResizePointerDown(e, calendarEvent)}

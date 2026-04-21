@@ -192,6 +192,9 @@
   touch-action: none;
   user-select: none;
   transition: filter 0.08s;
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
 }
 
 .calendar-event:active:not(.calendar-event--dragging):not(.calendar-event--resizing) {
@@ -208,6 +211,54 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.calendar-event-edit-btn {
+  display: none;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.25);
+  border: none;
+  border-radius: 3px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.7rem;
+  line-height: 1;
+  padding: 1px 3px;
+  margin-left: 4px;
+  opacity: 0.85;
+}
+
+.calendar-event-edit-btn:hover {
+  background: rgba(255, 255, 255, 0.45);
+  opacity: 1;
+}
+
+.calendar-event:hover .calendar-event-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.calendar-event-title-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 3px;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 1px 4px;
+  outline: none;
+  flex: 1;
+  min-width: 0;
+}
+
+.calendar-event-title-input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .calendar-event--dragging {
