@@ -23,6 +23,8 @@ function getDefaultDayIndex() {
   return Math.min(Math.max(today, 0), DAYS.length - 1);
 }
 
+const INSET = 4; // px gap on each outer edge of an overlap column
+
 export default function WeeklyGrid() {
   const hours = Array.from({ length: HOUR_COUNT }, (_, i) => START_HOUR + i);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -387,7 +389,6 @@ export default function WeeklyGrid() {
 
                 const layout = overlapLayouts[dayIndex];
                 const { columnIndex, columnCount } = layout.get(calendarEvent.id) ?? { columnIndex: 0, columnCount: 1 };
-                const INSET = 4; // px gap on each outer edge of a column
                 const leftPct = (columnIndex / columnCount) * 100;
                 const widthPct = 100 / columnCount;
 
