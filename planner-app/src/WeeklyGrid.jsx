@@ -12,8 +12,8 @@ import { addEvent, getEvents, updateEvent } from './eventStore';
 import { computeOverlapLayout } from './overlapLayout';
 import './WeeklyGrid.css';
 
-const ZOOM_Y_MIN = 0.5;
-const ZOOM_Y_MAX = 4;
+const ZOOM_MIN = 0.5;
+const ZOOM_MAX = 4;
 const DEFAULT_EVENT_DURATION_HOURS = '1';
 
 const EVENT_COLORS = ['#2563eb', '#9333ea', '#db2777', '#ea580c', '#059669'];
@@ -49,15 +49,13 @@ export default function WeeklyGrid() {
     });
   }
 
-  // Vertical zoom scale; pinch gesture adjusts slot heights.
-  const [zoomY, setZoomY] = useState(1);
+  // Zoom scale; pinch gesture adjusts both slot heights and column widths.
+  const [zoom, setZoom] = useState(1);
   // Ref so gesture callbacks always read the latest value without stale closures.
-  const zoomYRef = useRef(1);
-
-  const slotHeight = BASE_SLOT_HEIGHT * zoomY;
+  const zoomRef = useRef(1);
 
   // Keep ref in sync with state so all callbacks always read the current zoom.
-  useEffect(() => { zoomYRef.current = zoomY; }, [zoomY]);
+  useEffect(() => { zoomRef.current = zoom; }, [zoom]);
 
   const [formState, setFormState] = useState(() => ({
     title: '',
@@ -158,7 +156,7 @@ export default function WeeklyGrid() {
     const rect = cardBody.getBoundingClientRect();
     const y = clientY - rect.top + cardBody.scrollTop;
 
-    const currentSlotHeight = BASE_SLOT_HEIGHT * zoomYRef.current;
+    const currentSlotHeight = BASE_SLOT_HEIGHT * zoomRef.current;
     const eventTopY = (startHour - START_HOUR) * currentSlotHeight;
     const heightPx = y - eventTopY;
     const rawDuration = Math.round(heightPx / currentSlotHeight);
@@ -197,7 +195,7 @@ export default function WeeklyGrid() {
     const rect = cardBody.getBoundingClientRect();
     const y = clientY - rect.top + cardBody.scrollTop;
 
-    const currentSlotHeight = BASE_SLOT_HEIGHT * zoomYRef.current;
+    const currentSlotHeight = BASE_SLOT_HEIGHT * zoomRef.current;
 
     // Map y (adjusted for grab offset) to snapped hour
     const eventTopY = y - grabOffsetHours * currentSlotHeight;
@@ -343,23 +341,23 @@ export default function WeeklyGrid() {
     };
   }, [isDragging, isResizing]);
 
-  // Attach pinch gesture to the planner grid for two-finger zoom (Y axis only).
+  // Attach pinch gesture to the planner grid for two-finger zoom (both axes).
   const gridRef = useRef(null);
-  const pinchOriginRef = useRef({ zoomY: 1 });
+  const pinchOriginRef = useRef({ zoom: 1 });
   const bindGesture = useGesture(
     {
       onPinchStart() {
-        pinchOriginRef.current = { zoomY: zoomYRef.current };
+        pinchOriginRef.current = { zoom: zoomRef.current };
       },
       onPinch({ offset: [scale] }) {
         // offset[0] is the cumulative scale factor since the gesture began (starts at 1).
         const origin = pinchOriginRef.current;
-        const newY = Math.max(ZOOM_Y_MIN, Math.min(ZOOM_Y_MAX, origin.zoomY * scale));
-        zoomYRef.current = newY;
-        setZoomY(newY);
+        const newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, origin.zoom * scale));
+        zoomRef.current = newZoom;
+        setZoom(newZoom);
       },
     },
-    { pinch: { scaleBounds: { min: ZOOM_Y_MIN, max: ZOOM_Y_MAX }, rubberband: false } },
+    { pinch: { scaleBounds: { min: ZOOM_MIN, max: ZOOM_MAX }, rubberband: false } },
   );
 
   // Compute overlap layout (columnIndex, columnCount) for each event per day.
@@ -429,7 +427,7 @@ export default function WeeklyGrid() {
 
     // Calculate how far down inside the event the user grabbed (in hours)
     const y = e.clientY - rect.top + cardBody.scrollTop;
-    const currentSlotHeight = BASE_SLOT_HEIGHT * zoomYRef.current;
+    const currentSlotHeight = BASE_SLOT_HEIGHT * zoomRef.current;
     const eventTopY = (calendarEvent.startHour - START_HOUR) * currentSlotHeight;
     // Clamp grab offset to stay strictly inside the event bounds (subtract 1 px
     // so the offset never equals the full height, which would place the snap
@@ -494,7 +492,7 @@ export default function WeeklyGrid() {
       </div>
 
       {/* CSS Grid: 4-column card layout (Mon–Thu / Fri–Sun + To Do) */}
-      <div ref={gridRef} className="planner-grid" {...bindGesture()}>
+      <div ref={gridRef} className="planner-grid" style={{ zoom }} {...bindGesture()}>
         {DAYS.map((day, dayIndex) => {
           const isToDo = dayIndex === CALENDAR_DAY_COUNT; // last entry is To Do
 
@@ -523,13 +521,13 @@ export default function WeeklyGrid() {
                   <div
                     className="day-card-body"
                     ref={(el) => { dayCardBodyRefs.current[dayIndex] = el; }}
-                    style={{ height: HOUR_COUNT * slotHeight }}
+                    style={{ height: HOUR_COUNT * BASE_SLOT_HEIGHT }}
                   >
                     {hours.map((hour) => (
                       <div
                         key={hour}
                         className="hour-slot"
-                        style={{ height: slotHeight }}
+                        style={{ height: BASE_SLOT_HEIGHT }}
                         aria-label={`${day} ${formatHour(hour)}`}
                         onClick={() => {
                           if (isDragging || isResizing || isCreateOpen) return;
@@ -552,8 +550,8 @@ export default function WeeklyGrid() {
                       <div
                         className="drag-ghost"
                         style={{
-                          top: (dragState.previewHour - START_HOUR) * slotHeight,
-                          height: dragState.durationHours * slotHeight,
+                          top: (dragState.previewHour - START_HOUR) * BASE_SLOT_HEIGHT,
+                          height: dragState.durationHours * BASE_SLOT_HEIGHT,
                           borderColor: dragState.color,
                         }}
                       >
@@ -568,8 +566,8 @@ export default function WeeklyGrid() {
                       <div
                         className="drag-ghost"
                         style={{
-                          top: (resizeState.startHour - START_HOUR) * slotHeight,
-                          height: resizeState.previewDuration * slotHeight,
+                          top: (resizeState.startHour - START_HOUR) * BASE_SLOT_HEIGHT,
+                          height: resizeState.previewDuration * BASE_SLOT_HEIGHT,
                           borderColor: resizeState.color,
                         }}
                       >
@@ -596,8 +594,8 @@ export default function WeeklyGrid() {
                             key={calendarEvent.id}
                             className={eventClasses.join(' ')}
                             style={{
-                              top: (calendarEvent.startHour - START_HOUR) * slotHeight,
-                              height: calendarEvent.durationHours * slotHeight,
+                              top: (calendarEvent.startHour - START_HOUR) * BASE_SLOT_HEIGHT,
+                              height: calendarEvent.durationHours * BASE_SLOT_HEIGHT,
                               backgroundColor: calendarEvent.color,
                               left: `calc(${leftPct}% + ${INSET}px)`,
                               width: `calc(${widthPct}% - ${INSET * 2}px)`,
