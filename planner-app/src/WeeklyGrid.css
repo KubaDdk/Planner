@@ -170,8 +170,6 @@
 
 .calendar-event {
   position: absolute;
-  left: 6px;
-  right: 6px;
   border-radius: var(--border-radius);
   color: #fff;
   padding: 6px;

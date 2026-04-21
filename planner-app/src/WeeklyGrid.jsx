@@ -9,6 +9,7 @@ import {
   TIME_GUTTER_WIDTH,
 } from './constants';
 import { addEvent, getEvents, updateEvent } from './eventStore';
+import { computeOverlapLayout } from './overlapLayout';
 import './WeeklyGrid.css';
 
 const EVENT_COLORS = ['#2563eb', '#9333ea', '#db2777', '#ea580c', '#059669'];
@@ -21,6 +22,8 @@ function getDefaultDayIndex() {
   const today = (new Date().getDay() + 6) % 7;
   return Math.min(Math.max(today, 0), DAYS.length - 1);
 }
+
+const INSET = 4; // px gap on each outer edge of an overlap column
 
 export default function WeeklyGrid() {
   const hours = Array.from({ length: HOUR_COUNT }, (_, i) => START_HOUR + i);
@@ -183,6 +186,13 @@ export default function WeeklyGrid() {
   }, [isDragging, isResizing]);
 
   const gridWidth = TIME_GUTTER_WIDTH + BASE_DAY_WIDTH * DAYS.length;
+
+  // Compute overlap layout (columnIndex, columnCount) for each event per day.
+  const overlapLayouts = useMemo(
+    () => DAYS.map((_, dayIndex) => computeOverlapLayout(events.filter((e) => e.dayIndex === dayIndex))),
+    [events],
+  );
+
   const durationOptions = useMemo(() => {
     const selectedStartHour = Number(formState.startHour);
     const maxDuration = Math.max(1, END_HOUR - selectedStartHour);
@@ -376,6 +386,12 @@ export default function WeeklyGrid() {
                 const eventClasses = ['calendar-event'];
                 if (dragState?.eventId === calendarEvent.id) eventClasses.push('calendar-event--dragging');
                 if (resizeState?.eventId === calendarEvent.id) eventClasses.push('calendar-event--resizing');
+
+                const layout = overlapLayouts[dayIndex];
+                const { columnIndex, columnCount } = layout.get(calendarEvent.id) ?? { columnIndex: 0, columnCount: 1 };
+                const leftPct = (columnIndex / columnCount) * 100;
+                const widthPct = 100 / columnCount;
+
                 return (
                 <div
                   key={calendarEvent.id}
@@ -385,6 +401,8 @@ export default function WeeklyGrid() {
                     top: (calendarEvent.startHour - START_HOUR) * BASE_SLOT_HEIGHT,
                     height: calendarEvent.durationHours * BASE_SLOT_HEIGHT,
                     backgroundColor: calendarEvent.color,
+                    left: `calc(${leftPct}% + ${INSET}px)`,
+                    width: `calc(${widthPct}% - ${INSET * 2}px)`,
                   }}
                   title={calendarEvent.title || 'Untitled event'}
                   onPointerDown={(e) => handleEventPointerDown(e, calendarEvent)}
