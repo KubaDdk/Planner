@@ -63,8 +63,8 @@ export default function WeeklyGrid() {
     setDragState(value);
   }
 
-  // Per-card body element refs (indexed 0–CALENDAR_DAY_COUNT-1, To Do excluded).
-  const dayCardBodyRefs = useRef(DAYS.map(() => null));
+  // Per-card body element refs (indexed 0–CALENDAR_DAY_COUNT-1; To Do card has no time-based ref).
+  const dayCardBodyRefs = useRef(Array.from({ length: CALENDAR_DAY_COUNT }, () => null));
 
   // Inline-editing state: tracks which event title is being edited.
   const [editingEventId, setEditingEventId] = useState(null);
@@ -458,7 +458,7 @@ export default function WeeklyGrid() {
 
           return (
             <div key={day} className="day-card-wrapper">
-              <div className="day-card-label">{day.toUpperCase()}</div>
+              <div className="day-card-label">{day}</div>
               <div className="day-card">
                 {isToDo ? (
                   /* To Do card: flat list of events (no time positioning) */
@@ -608,8 +608,8 @@ export default function WeeklyGrid() {
                 value={formState.dayIndex}
                 onChange={(event) => handleFormChange('dayIndex', event.target.value)}
               >
-                {DAYS.map((day, idx) => (
-                  <option key={day} value={idx}>
+                {DAYS.map((day, dayIndex) => (
+                  <option key={day} value={dayIndex}>
                     {day}
                   </option>
                 ))}
