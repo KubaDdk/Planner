@@ -1,6 +1,12 @@
-/* ===== Planner shell – dark card theme ===== */
+/* ===== Planner shell – theme variables ===== */
 
 :root {
+  --font-size-label: 0.85rem;
+  --card-radius: 20px;
+  --border-radius: 10px;
+}
+
+.theme-dark {
   --color-bg: #111111;
   --color-card: #1a1a1a;
   --color-card-border: #2d2d2d;
@@ -13,10 +19,47 @@
   --color-border-light: #222222;
   --color-header-bg: #111111;
   --color-header-text: #e5e5e5;
+  --color-modal-bg: #1e1e1e;
+  --color-modal-border: #333;
+  --color-modal-text: #e5e5e5;
+  --color-modal-label: #b0b0b0;
+  --color-input-bg: #2a2a2a;
+  --color-input-border: #3a3a3a;
+  --color-input-text: #e5e5e5;
+  --color-btn-bg: #2a2a2a;
+  --color-btn-border: #3a3a3a;
+  --color-btn-text: #e5e5e5;
+  --color-swatch-border: rgba(255, 255, 255, 0.15);
+  --color-toggle-track: #3a3a3a;
+  --color-toggle-thumb: #ffffff;
+}
 
-  --font-size-label: 0.85rem;
-  --card-radius: 20px;
-  --border-radius: 10px;
+.theme-light {
+  --color-bg: #f0f0f0;
+  --color-card: #ffffff;
+  --color-card-border: #d4d4d4;
+  --color-label: #1a1a1a;
+  --color-slot-line: #e0e0e0;
+  --color-gutter-text: #9ca3af;
+  --color-slot-hover: rgba(0, 0, 0, 0.03);
+  --color-surface: #ffffff;
+  --color-border: #d4d4d4;
+  --color-border-light: #e0e0e0;
+  --color-header-bg: #f0f0f0;
+  --color-header-text: #1a1a1a;
+  --color-modal-bg: #ffffff;
+  --color-modal-border: #d4d4d4;
+  --color-modal-text: #1a1a1a;
+  --color-modal-label: #6b7280;
+  --color-input-bg: #f5f5f5;
+  --color-input-border: #d1d5db;
+  --color-input-text: #1a1a1a;
+  --color-btn-bg: #f5f5f5;
+  --color-btn-border: #d1d5db;
+  --color-btn-text: #1a1a1a;
+  --color-swatch-border: rgba(0, 0, 0, 0.15);
+  --color-toggle-track: #d1d5db;
+  --color-toggle-thumb: #1a1a1a;
 }
 
 /* Root container */
@@ -33,9 +76,57 @@
 .planner-toolbar {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
   padding: 10px 16px;
   background: var(--color-bg);
   flex-shrink: 0;
+}
+
+/* ===== Theme toggle switch ===== */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.theme-toggle-track {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--color-toggle-track);
+  border: 1px solid var(--color-btn-border);
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.theme-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--color-toggle-thumb);
+  transition: transform 0.2s, background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.theme-light .theme-toggle-thumb {
+  transform: translateX(20px);
+}
+
+.theme-toggle-label {
+  font-size: 0.8rem;
+  color: var(--color-label);
+  min-width: 28px;
 }
 
 .add-event-button {
@@ -305,20 +396,20 @@
 
 .create-event-form {
   width: min(360px, 100%);
-  background: #1e1e1e;
-  border: 1px solid #333;
+  background: var(--color-modal-bg);
+  border: 1px solid var(--color-modal-border);
   border-radius: 12px;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
   padding: 20px;
   display: grid;
   gap: 12px;
-  color: #e5e5e5;
+  color: var(--color-modal-text);
 }
 
 .create-event-form h2 {
   margin: 0 0 2px;
   font-size: 1rem;
-  color: #fff;
+  color: var(--color-modal-text);
 }
 
 .create-event-form label,
@@ -329,17 +420,17 @@
   margin: 0;
   padding: 0;
   font-size: 0.85rem;
-  color: #b0b0b0;
+  color: var(--color-modal-label);
 }
 
 .create-event-form input,
 .create-event-form select {
-  border: 1px solid #3a3a3a;
+  border: 1px solid var(--color-input-border);
   border-radius: 8px;
   padding: 6px 8px;
   font-size: 0.9rem;
-  background: #2a2a2a;
-  color: #e5e5e5;
+  background: var(--color-input-bg);
+  color: var(--color-input-text);
 }
 
 .create-event-form input:focus,
@@ -366,7 +457,7 @@
   width: 18px;
   height: 18px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid var(--color-swatch-border);
   margin-left: 6px;
 }
 
@@ -377,10 +468,10 @@
 }
 
 .create-event-actions button {
-  border: 1px solid #3a3a3a;
+  border: 1px solid var(--color-btn-border);
   border-radius: 8px;
-  background: #2a2a2a;
-  color: #e5e5e5;
+  background: var(--color-btn-bg);
+  color: var(--color-btn-text);
   padding: 6px 12px;
   cursor: pointer;
   font-size: 0.85rem;
