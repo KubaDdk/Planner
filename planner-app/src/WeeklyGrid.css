@@ -203,32 +203,7 @@
   white-space: nowrap;
   flex: 1;
   min-width: 0;
-}
-
-.calendar-event-edit-btn {
-  display: none;
-  flex-shrink: 0;
-  background: rgba(255, 255, 255, 0.25);
-  border: none;
-  border-radius: 5px;
-  color: #fff;
-  cursor: pointer;
-  font-size: 0.7rem;
-  line-height: 1;
-  padding: 1px 3px;
-  margin-left: 4px;
-  opacity: 0.85;
-}
-
-.calendar-event-edit-btn:hover {
-  background: rgba(255, 255, 255, 0.45);
-  opacity: 1;
-}
-
-.calendar-event:hover .calendar-event-edit-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  cursor: text;
 }
 
 .calendar-event-title-input {
