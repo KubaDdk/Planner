@@ -530,6 +530,17 @@ export default function WeeklyGrid() {
                         className="hour-slot"
                         style={{ height: slotHeight }}
                         aria-label={`${day} ${formatHour(hour)}`}
+                        onClick={() => {
+                          if (isDragging || isResizing || isCreateOpen) return;
+                          setFormState({
+                            title: '',
+                            dayIndex: String(dayIndex),
+                            startHour: String(hour),
+                            durationHours: '1',
+                            color: EVENT_COLORS[0],
+                          });
+                          setIsCreateOpen(true);
+                        }}
                       >
                         <span className="hour-slot-label">{formatHour(hour)}</span>
                       </div>
