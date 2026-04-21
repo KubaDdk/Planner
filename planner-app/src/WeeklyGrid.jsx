@@ -14,6 +14,7 @@ import './WeeklyGrid.css';
 
 const ZOOM_Y_MIN = 0.5;
 const ZOOM_Y_MAX = 4;
+const DEFAULT_EVENT_DURATION_HOURS = '1';
 
 const EVENT_COLORS = ['#2563eb', '#9333ea', '#db2777', '#ea580c', '#059669'];
 
@@ -62,7 +63,7 @@ export default function WeeklyGrid() {
     title: '',
     dayIndex: String(getDefaultDayIndex()),
     startHour: String(START_HOUR),
-    durationHours: '1',
+    durationHours: DEFAULT_EVENT_DURATION_HOURS,
     color: EVENT_COLORS[0],
   }));
 
@@ -378,7 +379,7 @@ export default function WeeklyGrid() {
       title: '',
       dayIndex: String(getDefaultDayIndex()),
       startHour: String(START_HOUR),
-      durationHours: '1',
+      durationHours: DEFAULT_EVENT_DURATION_HOURS,
       color: EVENT_COLORS[0],
     });
   }
@@ -536,7 +537,7 @@ export default function WeeklyGrid() {
                             title: '',
                             dayIndex: String(dayIndex),
                             startHour: String(hour),
-                            durationHours: '1',
+                            durationHours: DEFAULT_EVENT_DURATION_HOURS,
                             color: EVENT_COLORS[0],
                           });
                           setIsCreateOpen(true);
