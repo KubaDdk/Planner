@@ -37,6 +37,17 @@ export default function WeeklyGrid() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [events, setEvents] = useState(() => getEvents());
 
+  // Theme: 'dark' | 'light', persisted to localStorage
+  const [theme, setTheme] = useState(() => localStorage.getItem('planner-theme') || 'dark');
+
+  function toggleTheme() {
+    setTheme(prev => {
+      const next = prev === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('planner-theme', next);
+      return next;
+    });
+  }
+
   // Vertical zoom scale; pinch gesture adjusts slot heights.
   const [zoomY, setZoomY] = useState(1);
   // Ref so gesture callbacks always read the latest value without stale closures.
@@ -453,8 +464,22 @@ export default function WeeklyGrid() {
   }
 
   return (
-    <div className="planner-root">
+    <div className={`planner-root theme-${theme}`}>
       <div className="planner-toolbar">
+        <button
+          type="button"
+          className="theme-toggle"
+          onClick={toggleTheme}
+          aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+          title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+        >
+          <div className="theme-toggle-track">
+            <div className="theme-toggle-thumb">
+              {theme === 'dark' ? '🌙' : '☀️'}
+            </div>
+          </div>
+          <span className="theme-toggle-label">{theme === 'dark' ? 'Dark' : 'Light'}</span>
+        </button>
         <button
           type="button"
           className="add-event-button"
