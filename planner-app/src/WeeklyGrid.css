@@ -50,6 +50,15 @@
   background: #1d4ed8;
 }
 
+.add-event-button:active {
+  background: #1e40af;
+}
+
+.add-event-button:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 2px;
+}
+
 /* ===== Sticky header ===== */
 .planner-header {
   display: flex;
@@ -182,6 +191,23 @@
   cursor: grab;
   touch-action: none;
   user-select: none;
+  transition: filter 0.08s;
+}
+
+.calendar-event:active:not(.calendar-event--dragging):not(.calendar-event--resizing) {
+  filter: brightness(0.85);
+}
+
+.calendar-event:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.8);
+  outline-offset: -2px;
+}
+
+.calendar-event-title {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .calendar-event--dragging {
@@ -198,7 +224,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 10px;
+  height: 20px;
   cursor: ns-resize;
   border-radius: 0 0 var(--border-radius) var(--border-radius);
 }
@@ -309,8 +335,21 @@
   cursor: pointer;
 }
 
+.create-event-actions button:active {
+  opacity: 0.75;
+}
+
+.create-event-actions button:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
 .create-event-actions button[type='submit'] {
   background: #2563eb;
   border-color: #2563eb;
   color: #fff;
+}
+
+.create-event-actions button[type='submit']:focus-visible {
+  outline-color: #93c5fd;
 }
