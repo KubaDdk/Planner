@@ -594,7 +594,7 @@ export default function WeeklyGrid() {
 
         {/* Theme toggle cell (replaces the To Do card) */}
         <div className="day-card-wrapper">
-          <div className="day-card-label"> </div>
+          <div className="day-card-label">Theme</div>
           <div className="day-card day-card--theme-toggle">
             <button
               type="button"
