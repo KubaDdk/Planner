@@ -567,19 +567,14 @@ export default function WeeklyGrid() {
                                 onPointerDown={(e) => e.stopPropagation()}
                               />
                             ) : (
-                              <span className="calendar-event-title">
+                              <span
+                                className="calendar-event-title"
+                                onPointerDown={(e) => e.stopPropagation()}
+                                onClick={(e) => handleEditStart(e, calendarEvent)}
+                              >
                                 {calendarEvent.title || 'Untitled event'}
                               </span>
                             )}
-                            <button
-                              type="button"
-                              className="calendar-event-edit-btn"
-                              aria-label="Edit event title"
-                              onPointerDown={(e) => e.stopPropagation()}
-                              onClick={(e) => handleEditStart(e, calendarEvent)}
-                            >
-                              ✏
-                            </button>
                             <div
                               className="resize-handle"
                               onPointerDown={(e) => handleResizePointerDown(e, calendarEvent)}
