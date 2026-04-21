@@ -62,6 +62,9 @@ export function updateEvent(id, changes) {
   event.dayIndex = clamp(Number(changes.dayIndex ?? event.dayIndex), 0, DAYS.length - 1);
   event.startHour = startHour;
   event.durationHours = durationHours;
+  if (changes.title !== undefined) {
+    event.title = String(changes.title).trim();
+  }
 
   return { ...event };
 }
