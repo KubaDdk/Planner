@@ -21,6 +21,10 @@ function formatHour(hour) {
   return `${String(hour).padStart(2, '0')}:00`;
 }
 
+function formatTimeLabel(startHour, durationHours) {
+  return `${formatHour(startHour)} · ${durationHours}h`;
+}
+
 function getDefaultDayIndex() {
   const today = (new Date().getDay() + 6) % 7;
   return Math.min(Math.max(today, 0), CALENDAR_DAY_COUNT - 1);
@@ -515,7 +519,11 @@ export default function WeeklyGrid() {
                           height: dragState.durationHours * slotHeight,
                           borderColor: dragState.color,
                         }}
-                      />
+                      >
+                        <span className="drag-ghost-time" style={{ color: dragState.color }}>
+                          {formatTimeLabel(dragState.previewHour, dragState.durationHours)}
+                        </span>
+                      </div>
                     )}
 
                     {/* Resize ghost */}
@@ -527,7 +535,11 @@ export default function WeeklyGrid() {
                           height: resizeState.previewDuration * slotHeight,
                           borderColor: resizeState.color,
                         }}
-                      />
+                      >
+                        <span className="drag-ghost-time" style={{ color: resizeState.color }}>
+                          {formatTimeLabel(resizeState.startHour, resizeState.previewDuration)}
+                        </span>
+                      </div>
                     )}
 
                     {events
@@ -575,6 +587,9 @@ export default function WeeklyGrid() {
                                 {calendarEvent.title || 'Untitled event'}
                               </span>
                             )}
+                            <span className="calendar-event-time">
+                              {formatTimeLabel(calendarEvent.startHour, calendarEvent.durationHours)}
+                            </span>
                             <div
                               className="resize-handle"
                               onPointerDown={(e) => handleResizePointerDown(e, calendarEvent)}

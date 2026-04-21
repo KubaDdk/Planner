@@ -206,6 +206,18 @@
   cursor: text;
 }
 
+.calendar-event-time {
+  position: absolute;
+  bottom: 22px; /* sit above the resize-handle (20px tall) + 2px gap */
+  right: 8px;
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.75);
+  pointer-events: none;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 .calendar-event-title-input {
   display: block;
   width: 100%;
@@ -267,6 +279,16 @@
   z-index: 1;
   box-sizing: border-box;
   pointer-events: none;
+}
+
+.drag-ghost-time {
+  position: absolute;
+  bottom: 6px;
+  right: 8px;
+  font-size: 0.65rem;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 /* ===== Create-event modal ===== */
