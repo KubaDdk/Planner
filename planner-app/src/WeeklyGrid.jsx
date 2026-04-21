@@ -79,7 +79,7 @@ export default function WeeklyGrid() {
     setDragState(value);
   }
 
-  // Per-card body element refs (indexed 0–CALENDAR_DAY_COUNT-1; To Do card has no time-based ref).
+  // Per-card body element refs (indexed 0–CALENDAR_DAY_COUNT-1).
   const dayCardBodyRefs = useRef(Array.from({ length: CALENDAR_DAY_COUNT }, () => null));
 
   // Inline-editing state: tracks which event title is being edited.
@@ -466,65 +466,18 @@ export default function WeeklyGrid() {
 
   return (
     <div className={`planner-root theme-${theme}`}>
-      <div className="planner-toolbar">
-        <button
-          type="button"
-          className="theme-toggle"
-          onClick={toggleTheme}
-          aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
-          title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
-        >
-          <div className="theme-toggle-track">
-            <div className="theme-toggle-thumb">
-              {theme === 'dark' ? '🌙' : '☀️'}
-            </div>
-          </div>
-          <span className="theme-toggle-label">{theme === 'dark' ? 'Dark' : 'Light'}</span>
-        </button>
-        <button
-          type="button"
-          className="add-event-button"
-          onClick={() => {
-            resetForm();
-            setIsCreateOpen(true);
-          }}
-        >
-          + Add event
-        </button>
-      </div>
-
-      {/* CSS Grid: 4-column card layout (Mon–Thu / Fri–Sun + To Do) */}
+      {/* CSS Grid: 4-column card layout (Mon–Thu / Fri–Sun + theme toggle) */}
       <div ref={gridRef} className="planner-grid" {...bindGesture()}>
-        {DAYS.map((day, dayIndex) => {
-          const isToDo = dayIndex === CALENDAR_DAY_COUNT; // last entry is To Do
-
-          return (
-            <div key={day} className="day-card-wrapper">
-              <div className="day-card-label">{day}</div>
-              <div className="day-card">
-                {isToDo ? (
-                  /* To Do card: flat list of events (no time positioning) */
-                  <div className="day-card-body day-card-body--todo">
-                    {events
-                      .filter((ev) => ev.dayIndex === dayIndex)
-                      .map((ev) => (
-                        <div
-                          key={ev.id}
-                          className="todo-event-item"
-                          style={{ backgroundColor: ev.color }}
-                          title={ev.title || 'Untitled'}
-                        >
-                          {ev.title || 'Untitled'}
-                        </div>
-                      ))}
-                  </div>
-                ) : (
-                  /* Calendar day card: time-slot-based, scrollable */
-                  <div
-                    className="day-card-body"
-                    ref={(el) => { dayCardBodyRefs.current[dayIndex] = el; }}
-                    style={{ height: HOUR_COUNT * slotHeight }}
-                  >
+        {DAYS.map((day, dayIndex) => (
+          <div key={day} className="day-card-wrapper">
+            <div className="day-card-label">{day}</div>
+            <div className="day-card">
+              {/* Calendar day card: time-slot-based, scrollable */}
+              <div
+                className="day-card-body"
+                ref={(el) => { dayCardBodyRefs.current[dayIndex] = el; }}
+                style={{ height: HOUR_COUNT * slotHeight }}
+              >
                     {hours.map((hour) => (
                       <div
                         key={hour}
@@ -635,11 +588,30 @@ export default function WeeklyGrid() {
                         );
                       })}
                   </div>
-                )}
               </div>
             </div>
-          );
-        })}
+        ))}
+
+        {/* Theme toggle cell (replaces the To Do card) */}
+        <div className="day-card-wrapper">
+          <div className="day-card-label">Theme</div>
+          <div className="day-card day-card--theme-toggle">
+            <button
+              type="button"
+              className="theme-toggle"
+              onClick={toggleTheme}
+              aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+              title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+            >
+              <div className="theme-toggle-track">
+                <div className="theme-toggle-thumb">
+                  {theme === 'dark' ? '🌙' : '☀️'}
+                </div>
+              </div>
+              <span className="theme-toggle-label">{theme === 'dark' ? 'Dark' : 'Light'}</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       {isCreateOpen && (
@@ -683,7 +655,6 @@ export default function WeeklyGrid() {
               <select
                 value={formState.startHour}
                 onChange={(event) => handleFormChange('startHour', event.target.value)}
-                disabled={Number(formState.dayIndex) === CALENDAR_DAY_COUNT}
               >
                 {hours.map((hour) => (
                   <option key={hour} value={hour}>
@@ -698,7 +669,6 @@ export default function WeeklyGrid() {
               <select
                 value={formState.durationHours}
                 onChange={(event) => handleFormChange('durationHours', event.target.value)}
-                disabled={Number(formState.dayIndex) === CALENDAR_DAY_COUNT}
               >
                 {durationOptions.map((duration) => (
                   <option key={duration} value={duration}>
