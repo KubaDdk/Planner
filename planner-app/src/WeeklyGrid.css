@@ -1,23 +1,25 @@
-/* ===== Planner shell ===== */
+/* ===== Planner shell – dark card theme ===== */
 
 :root {
-  --color-bg: #f4f5f7;
-  --color-surface: #ffffff;
-  --color-border: #d1d5db;
-  --color-border-light: #e5e7eb;
-  --color-header-bg: #1e293b;
-  --color-header-text: #f8fafc;
-  --color-gutter-bg: #f8fafc;
-  --color-gutter-text: #64748b;
-  --color-slot-hover: #eff6ff;
-  --color-weekend: #fafafa;
+  --color-bg: #111111;
+  --color-card: #1a1a1a;
+  --color-card-border: #2d2d2d;
+  --color-label: #e5e5e5;
+  --color-slot-line: #222222;
+  --color-gutter-text: #555555;
+  --color-slot-hover: rgba(255, 255, 255, 0.03);
+  --color-surface: #1a1a1a;
+  --color-border: #2d2d2d;
+  --color-border-light: #222222;
+  --color-header-bg: #111111;
+  --color-header-text: #e5e5e5;
 
-  --font-size-header: 0.9rem;
-  --font-size-label: 0.75rem;
-  --border-radius: 4px;
+  --font-size-label: 0.85rem;
+  --card-radius: 20px;
+  --border-radius: 10px;
 }
 
-/* Root container: fills the viewport */
+/* Root container */
 .planner-root {
   display: flex;
   flex-direction: column;
@@ -27,20 +29,21 @@
   font-family: system-ui, -apple-system, sans-serif;
 }
 
+/* Toolbar */
 .planner-toolbar {
   display: flex;
   justify-content: flex-end;
-  padding: 8px 12px;
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border-light);
+  padding: 10px 16px;
+  background: var(--color-bg);
+  flex-shrink: 0;
 }
 
 .add-event-button {
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius);
+  border: 1px solid #3a3a3a;
+  border-radius: 8px;
   background: #2563eb;
   color: #fff;
-  padding: 6px 12px;
+  padding: 6px 14px;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
@@ -59,104 +62,95 @@
   outline-offset: 2px;
 }
 
-/* ===== Sticky header ===== */
-.planner-header {
-  display: flex;
-  flex-direction: row;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: var(--color-header-bg);
-  border-bottom: 2px solid var(--color-border);
-  /* Allow horizontal scroll to follow body scroll */
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.time-gutter-header {
-  flex-shrink: 0;
-  background: var(--color-header-bg);
-}
-
-.day-header {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 12px 4px;
-  font-size: var(--font-size-header);
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--color-header-text);
-  border-left: 1px solid rgba(255, 255, 255, 0.12);
-  user-select: none;
-}
-
-/* ===== Scrollable body ===== */
-.planner-body {
-  display: flex;
-  flex-direction: row;
-  overflow-y: auto;
-  overflow-x: auto;
+/* ===== CSS Grid: 4-column card layout ===== */
+.planner-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: 1fr;
+  gap: 14px;
+  padding: 0 16px 16px;
   flex: 1;
-  background: var(--color-surface);
-  -webkit-overflow-scrolling: touch;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--color-bg);
   touch-action: pan-x pan-y;
 }
 
-/* ===== Time gutter ===== */
-.time-gutter {
-  flex-shrink: 0;
-  background: var(--color-gutter-bg);
-  border-right: 1px solid var(--color-border);
-  position: sticky;
-  left: 0;
-  z-index: 5;
-}
-
-.time-label {
+/* Wrapper: label above card */
+.day-card-wrapper {
   display: flex;
-  align-items: flex-start;
-  justify-content: flex-end;
-  padding: 4px 8px 0 0;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+}
+
+.day-card-label {
+  text-align: center;
+  color: var(--color-label);
   font-size: var(--font-size-label);
-  color: var(--color-gutter-text);
-  font-variant-numeric: tabular-nums;
-  border-bottom: 1px solid var(--color-border-light);
-  box-sizing: border-box;
+  font-weight: 500;
+  letter-spacing: 0.04em;
   user-select: none;
-}
-
-.time-label--end {
-  /* The final timestamp label at the bottom (22:00) — no slot height */
-  height: 20px;
-  border-bottom: none;
-}
-
-/* ===== Day columns ===== */
-.day-column {
   flex-shrink: 0;
-  border-right: 1px solid var(--color-border-light);
+}
+
+/* The visible card */
+.day-card {
+  background: var(--color-card);
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--card-radius);
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Scrollable inner area for time-based content */
+.day-card-body {
   position: relative;
-  background: var(--color-surface);
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #333 transparent;
 }
 
-.day-column--last {
-  border-right: none;
+.day-card-body::-webkit-scrollbar {
+  width: 4px;
 }
 
-/* Weekend columns (Sat = index 5, Sun = index 6) — subtle tint */
-.day-column:nth-child(n + 7) {
-  background: var(--color-weekend);
+.day-card-body::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
 }
 
-/* ===== Hour slots ===== */
+/* To Do card body */
+.day-card-body--todo {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+}
+
+/* To Do list items */
+.todo-event-item {
+  border-radius: var(--border-radius);
+  color: #fff;
+  padding: 7px 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: default;
+  user-select: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===== Hour slots (invisible structure inside cards) ===== */
 .hour-slot {
-  border-bottom: 1px solid var(--color-border-light);
+  border-bottom: 1px solid var(--color-slot-line);
   box-sizing: border-box;
   width: 100%;
-  cursor: default;
   position: relative;
   transition: background 0.1s;
 }
@@ -165,7 +159,7 @@
   background: var(--color-slot-hover);
 }
 
-/* Half-hour guide line (decorative) */
+/* Half-hour guide line */
 .hour-slot::after {
   content: '';
   position: absolute;
@@ -173,16 +167,17 @@
   left: 0;
   right: 0;
   height: 1px;
-  background: var(--color-border-light);
-  opacity: 0.6;
+  background: var(--color-slot-line);
+  opacity: 0.5;
   pointer-events: none;
 }
 
+/* ===== Calendar events ===== */
 .calendar-event {
   position: absolute;
   border-radius: var(--border-radius);
   color: #fff;
-  padding: 6px;
+  padding: 6px 8px;
   font-size: 0.8rem;
   font-weight: 600;
   overflow: hidden;
@@ -220,7 +215,7 @@
   flex-shrink: 0;
   background: rgba(255, 255, 255, 0.25);
   border: none;
-  border-radius: 3px;
+  border-radius: 5px;
   color: #fff;
   cursor: pointer;
   font-size: 0.7rem;
@@ -247,7 +242,7 @@
   box-sizing: border-box;
   background: rgba(255, 255, 255, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.6);
-  border-radius: 3px;
+  border-radius: 5px;
   color: #fff;
   font-size: 0.8rem;
   font-weight: 600;
@@ -298,16 +293,17 @@
   right: 6px;
   border-radius: var(--border-radius);
   border: 2px dashed;
-  background: rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.04);
   z-index: 1;
   box-sizing: border-box;
   pointer-events: none;
 }
 
+/* ===== Create-event modal ===== */
 .create-event-modal {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.35);
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -317,17 +313,20 @@
 
 .create-event-form {
   width: min(360px, 100%);
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.18);
-  padding: 16px;
+  background: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+  padding: 20px;
   display: grid;
-  gap: 10px;
+  gap: 12px;
+  color: #e5e5e5;
 }
 
 .create-event-form h2 {
   margin: 0 0 2px;
   font-size: 1rem;
+  color: #fff;
 }
 
 .create-event-form label,
@@ -338,15 +337,23 @@
   margin: 0;
   padding: 0;
   font-size: 0.85rem;
-  color: #334155;
+  color: #b0b0b0;
 }
 
 .create-event-form input,
 .create-event-form select {
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius);
+  border: 1px solid #3a3a3a;
+  border-radius: 8px;
   padding: 6px 8px;
   font-size: 0.9rem;
+  background: #2a2a2a;
+  color: #e5e5e5;
+}
+
+.create-event-form input:focus,
+.create-event-form select:focus {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
 }
 
 .event-color-palette {
@@ -367,7 +374,7 @@
   width: 18px;
   height: 18px;
   border-radius: 999px;
-  border: 1px solid rgba(15, 23, 42, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   margin-left: 6px;
 }
 
@@ -378,12 +385,13 @@
 }
 
 .create-event-actions button {
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius);
-  background: #fff;
-  color: #0f172a;
-  padding: 6px 10px;
+  border: 1px solid #3a3a3a;
+  border-radius: 8px;
+  background: #2a2a2a;
+  color: #e5e5e5;
+  padding: 6px 12px;
   cursor: pointer;
+  font-size: 0.85rem;
 }
 
 .create-event-actions button:active {
