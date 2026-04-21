@@ -93,6 +93,7 @@
   flex: 1;
   background: var(--color-surface);
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
 }
 
 /* ===== Time gutter ===== */
