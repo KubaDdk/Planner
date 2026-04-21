@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGesture } from '@use-gesture/react';
+import SunCalc from 'suncalc';
 import {
   DAYS,
   CALENDAR_DAY_COUNT,
@@ -33,10 +34,51 @@ function getDefaultDayIndex() {
 
 const INSET = 4; // px gap on each outer edge of an overlap column
 
+// Brussels coordinates
+const BRUSSELS_LAT = 50.8503;
+const BRUSSELS_LNG = 4.3517;
+
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+function getTodayInfo() {
+  const now = new Date();
+  const dd = String(now.getDate()).padStart(2, '0');
+  const month = MONTH_NAMES[now.getMonth()];
+  const yyyy = now.getFullYear();
+  const dateLabel = `${dd}-${month}-${yyyy}`;
+
+  const times = SunCalc.getTimes(now, BRUSSELS_LAT, BRUSSELS_LNG);
+  const formatTime = (d) => {
+    const h = String(d.getHours()).padStart(2, '0');
+    const m = String(d.getMinutes()).padStart(2, '0');
+    return `${h}:${m}`;
+  };
+  return {
+    dateLabel,
+    sunrise: formatTime(times.sunrise),
+    sunset: formatTime(times.sunset),
+  };
+}
+
 export default function WeeklyGrid() {
   const hours = Array.from({ length: HOUR_COUNT }, (_, i) => START_HOUR + i);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [events, setEvents] = useState(() => getEvents());
+
+  // Today's date and Brussels sun times; refreshes at midnight.
+  const [todayInfo, setTodayInfo] = useState(getTodayInfo);
+  useEffect(() => {
+    const now = new Date();
+    const msUntilMidnight =
+      new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() - now.getTime();
+    const timer = setTimeout(() => {
+      setTodayInfo(getTodayInfo());
+    }, msUntilMidnight);
+    return () => clearTimeout(timer);
+  }, [todayInfo]);
 
   // Theme: 'dark' | 'light', persisted to localStorage
   const [theme, setTheme] = useState(() => localStorage.getItem('planner-theme') || 'dark');
@@ -610,6 +652,17 @@ export default function WeeklyGrid() {
               </div>
               <span className="theme-toggle-label">{theme === 'dark' ? 'Dark' : 'Light'}</span>
             </button>
+            <div className="sun-info">
+              <div className="sun-info-date">{todayInfo.dateLabel}</div>
+              <div className="sun-info-row">
+                <span className="sun-info-icon">🌅</span>
+                <span className="sun-info-time">{todayInfo.sunrise}</span>
+              </div>
+              <div className="sun-info-row">
+                <span className="sun-info-icon">🌇</span>
+                <span className="sun-info-time">{todayInfo.sunset}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
