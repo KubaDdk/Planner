@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   DAYS,
   START_HOUR,
@@ -11,6 +11,13 @@ import {
 import { addEvent, getEvents, updateEvent } from './eventStore';
 import { computeOverlapLayout } from './overlapLayout';
 import './WeeklyGrid.css';
+
+const ZOOM_MIN = 0.5;
+const ZOOM_MAX = 3;
+
+function clampZoom(value) {
+  return Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, value));
+}
 
 const EVENT_COLORS = ['#2563eb', '#9333ea', '#db2777', '#ea580c', '#059669'];
 
@@ -37,11 +44,25 @@ export default function WeeklyGrid() {
     color: EVENT_COLORS[0],
   }));
 
+  // Zoom state — zoomX scales day-column widths, zoomY scales hour-slot heights.
+  const [zoom, setZoom] = useState({ x: 1, y: 1 });
+  // Ref mirrors state so touch-event handlers (registered once) can read the
+  // current zoom without stale closures.
+  const zoomRef = useRef({ x: 1, y: 1 });
+  useLayoutEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
+
+  // Computed per-render dimensions derived from zoom.
+  const slotHeight = BASE_SLOT_HEIGHT * zoom.y;
+  const dayWidth = BASE_DAY_WIDTH * zoom.x;
+
   // Drag state for rendering (ghost + opacity). The ref holds the same value
   // so window listeners can always access the latest without stale closures.
   const [dragState, setDragState] = useState(null);
   const dragRef = useRef(null);
   const bodyRef = useRef(null);
+  const plannerRef = useRef(null);
 
   const isDragging = dragState !== null;
 
@@ -69,12 +90,12 @@ export default function WeeklyGrid() {
     const rect = body.getBoundingClientRect();
     const y = clientY - rect.top + body.scrollTop;
 
-    const eventTopY = (startHour - START_HOUR) * BASE_SLOT_HEIGHT;
+    const eventTopY = (startHour - START_HOUR) * slotHeight;
     const heightPx = y - eventTopY;
-    const rawDuration = Math.round(heightPx / BASE_SLOT_HEIGHT);
+    const rawDuration = Math.round(heightPx / slotHeight);
     const maxDuration = END_HOUR - startHour;
     return Math.max(1, Math.min(maxDuration, rawDuration));
-  }, []);
+  }, [slotHeight]);
 
   // Compute the snapped grid position (dayIndex, startHour) from a pointer location.
   const getSnappedPos = useCallback((clientX, clientY, grabOffsetHours) => {
@@ -86,16 +107,16 @@ export default function WeeklyGrid() {
 
     // Map x to day column
     const xInCols = x - TIME_GUTTER_WIDTH;
-    const rawDay = Math.floor(xInCols / BASE_DAY_WIDTH);
+    const rawDay = Math.floor(xInCols / dayWidth);
     const dayIndex = Math.max(0, Math.min(DAYS.length - 1, rawDay));
 
     // Map y (adjusted for grab offset) to snapped hour
-    const eventTopY = y - grabOffsetHours * BASE_SLOT_HEIGHT;
-    const rawHour = Math.round(eventTopY / BASE_SLOT_HEIGHT) + START_HOUR;
+    const eventTopY = y - grabOffsetHours * slotHeight;
+    const rawHour = Math.round(eventTopY / slotHeight) + START_HOUR;
     const startHour = Math.max(START_HOUR, Math.min(END_HOUR - 1, rawHour));
 
     return { dayIndex, startHour };
-  }, []);
+  }, [slotHeight, dayWidth]);
 
   // Add window-level pointer listeners while a drag is active.
   useEffect(() => {
@@ -170,6 +191,63 @@ export default function WeeklyGrid() {
     };
   }, [isResizing, getSnappedDuration]);
 
+  // Attach non-passive touchmove listener for pinch-zoom on the planner root.
+  // Two-finger pinch scales zoomX and zoomY independently based on the initial
+  // zoom values captured at pinch start.
+  const pinchRef = useRef(null);
+
+  useEffect(() => {
+    const el = plannerRef.current;
+    if (!el) return;
+
+    function getTouchDist(touches) {
+      const dx = touches[0].clientX - touches[1].clientX;
+      const dy = touches[0].clientY - touches[1].clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function onTouchStart(e) {
+      if (e.touches.length === 2) {
+        const dist = getTouchDist(e.touches);
+        if (dist === 0) return;
+        pinchRef.current = {
+          initialDist: dist,
+          initialZoom: { ...zoomRef.current },
+        };
+      }
+    }
+
+    function onTouchMove(e) {
+      if (e.touches.length !== 2 || !pinchRef.current) return;
+      // Prevent the browser from scrolling or performing its own pinch-zoom.
+      e.preventDefault();
+      const dist = getTouchDist(e.touches);
+      const ratio = dist / pinchRef.current.initialDist;
+      setZoom({
+        x: clampZoom(pinchRef.current.initialZoom.x * ratio),
+        y: clampZoom(pinchRef.current.initialZoom.y * ratio),
+      });
+    }
+
+    function onTouchEnd(e) {
+      if (e.touches.length < 2) {
+        pinchRef.current = null;
+      }
+    }
+
+    el.addEventListener('touchstart', onTouchStart);
+    el.addEventListener('touchmove', onTouchMove, { passive: false });
+    el.addEventListener('touchend', onTouchEnd);
+    el.addEventListener('touchcancel', onTouchEnd);
+
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart);
+      el.removeEventListener('touchmove', onTouchMove);
+      el.removeEventListener('touchend', onTouchEnd);
+      el.removeEventListener('touchcancel', onTouchEnd);
+    };
+  }, []); // uses zoomXRef/zoomYRef so deps stay stable
+
   // Set a grabbing/resize cursor and disable text selection while interacting.
   useEffect(() => {
     if (isDragging || isResizing) {
@@ -185,7 +263,7 @@ export default function WeeklyGrid() {
     };
   }, [isDragging, isResizing]);
 
-  const gridWidth = TIME_GUTTER_WIDTH + BASE_DAY_WIDTH * DAYS.length;
+  const gridWidth = TIME_GUTTER_WIDTH + dayWidth * DAYS.length;
 
   // Compute overlap layout (columnIndex, columnCount) for each event per day.
   const overlapLayouts = useMemo(
@@ -243,8 +321,8 @@ export default function WeeklyGrid() {
   }
 
   function handleEventPointerDown(e, calendarEvent) {
-    // Ignore if the create-modal is open or a resize is in progress
-    if (isCreateOpen || isResizing) return;
+    // Ignore if the create-modal is open, a resize is in progress, or a pinch is active
+    if (isCreateOpen || isResizing || pinchRef.current) return;
     e.preventDefault();
     e.stopPropagation();
 
@@ -254,18 +332,18 @@ export default function WeeklyGrid() {
 
     // Calculate how far down inside the event the user grabbed (in hours)
     const y = e.clientY - rect.top + body.scrollTop;
-    const eventTopY = (calendarEvent.startHour - START_HOUR) * BASE_SLOT_HEIGHT;
+    const eventTopY = (calendarEvent.startHour - START_HOUR) * slotHeight;
     // Clamp grab offset to stay strictly inside the event bounds (subtract 1 px
     // so the offset never equals the full height, which would place the snap
     // point one slot below the event's actual end).
     const grabOffsetPx = Math.max(
       0,
-      Math.min(y - eventTopY, calendarEvent.durationHours * BASE_SLOT_HEIGHT - 1),
+      Math.min(y - eventTopY, calendarEvent.durationHours * slotHeight - 1),
     );
 
     setDragAndRef({
       eventId: calendarEvent.id,
-      grabOffsetHours: grabOffsetPx / BASE_SLOT_HEIGHT,
+      grabOffsetHours: grabOffsetPx / slotHeight,
       previewDay: calendarEvent.dayIndex,
       previewHour: calendarEvent.startHour,
       durationHours: calendarEvent.durationHours,
@@ -274,8 +352,8 @@ export default function WeeklyGrid() {
   }
 
   function handleResizePointerDown(e, calendarEvent) {
-    // Ignore if the create-modal is open or a drag is in progress
-    if (isCreateOpen || isDragging) return;
+    // Ignore if the create-modal is open, a drag is in progress, or a pinch is active
+    if (isCreateOpen || isDragging || pinchRef.current) return;
     e.preventDefault();
     e.stopPropagation(); // prevent the event's pointerdown (drag) from firing
 
@@ -289,7 +367,7 @@ export default function WeeklyGrid() {
   }
 
   return (
-    <div className="planner-root">
+    <div ref={plannerRef} className="planner-root">
       <div className="planner-toolbar">
         <button
           type="button"
@@ -313,7 +391,7 @@ export default function WeeklyGrid() {
           <div
             key={day}
             className="day-header"
-            style={{ width: BASE_DAY_WIDTH, minWidth: BASE_DAY_WIDTH }}
+            style={{ width: dayWidth, minWidth: dayWidth }}
           >
             {day}
           </div>
@@ -331,7 +409,7 @@ export default function WeeklyGrid() {
             <div
               key={hour}
               className="time-label"
-              style={{ height: BASE_SLOT_HEIGHT }}
+              style={{ height: slotHeight }}
             >
               {formatHour(hour)}
             </div>
@@ -345,13 +423,13 @@ export default function WeeklyGrid() {
           <div
             key={day}
             className={`day-column${dayIndex === DAYS.length - 1 ? ' day-column--last' : ''}`}
-            style={{ width: BASE_DAY_WIDTH, minWidth: BASE_DAY_WIDTH }}
+            style={{ width: dayWidth, minWidth: dayWidth }}
           >
             {hours.map((hour) => (
               <div
                 key={hour}
                 className="hour-slot"
-                style={{ height: BASE_SLOT_HEIGHT }}
+                style={{ height: slotHeight }}
                 aria-label={`${day} ${formatHour(hour)}`}
               />
             ))}
@@ -361,8 +439,8 @@ export default function WeeklyGrid() {
               <div
                 className="drag-ghost"
                 style={{
-                  top: (dragState.previewHour - START_HOUR) * BASE_SLOT_HEIGHT,
-                  height: dragState.durationHours * BASE_SLOT_HEIGHT,
+                  top: (dragState.previewHour - START_HOUR) * slotHeight,
+                  height: dragState.durationHours * slotHeight,
                   borderColor: dragState.color,
                 }}
               />
@@ -373,8 +451,8 @@ export default function WeeklyGrid() {
               <div
                 className="drag-ghost"
                 style={{
-                  top: (resizeState.startHour - START_HOUR) * BASE_SLOT_HEIGHT,
-                  height: resizeState.previewDuration * BASE_SLOT_HEIGHT,
+                  top: (resizeState.startHour - START_HOUR) * slotHeight,
+                  height: resizeState.previewDuration * slotHeight,
                   borderColor: resizeState.color,
                 }}
               />
@@ -398,8 +476,8 @@ export default function WeeklyGrid() {
                   className={eventClasses.join(' ')}
                   style={{
                     // Event layout is derived from model values and snapped to hour-height units.
-                    top: (calendarEvent.startHour - START_HOUR) * BASE_SLOT_HEIGHT,
-                    height: calendarEvent.durationHours * BASE_SLOT_HEIGHT,
+                    top: (calendarEvent.startHour - START_HOUR) * slotHeight,
+                    height: calendarEvent.durationHours * slotHeight,
                     backgroundColor: calendarEvent.color,
                     left: `calc(${leftPct}% + ${INSET}px)`,
                     width: `calc(${widthPct}% - ${INSET * 2}px)`,

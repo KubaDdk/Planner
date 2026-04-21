@@ -25,6 +25,8 @@
   background: var(--color-bg);
   overflow: hidden;
   font-family: system-ui, -apple-system, sans-serif;
+  /* Allow JS to intercept pinch-zoom touch events */
+  touch-action: pan-x pan-y;
 }
 
 .planner-toolbar {
