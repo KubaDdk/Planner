@@ -1,0 +1,8 @@
+.planner-canvas {
+  display: block;
+  cursor: grab;
+}
+
+.planner-canvas.panning {
+  cursor: grabbing;
+}
