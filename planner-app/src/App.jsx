@@ -1,7 +1,7 @@
-import WeeklyGrid from './WeeklyGrid'
+import PlannerCanvas from './PlannerCanvas'
 
 function App() {
-  return <WeeklyGrid />
+  return <PlannerCanvas />
 }
 
 export default App
